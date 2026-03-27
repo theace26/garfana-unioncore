@@ -4,6 +4,34 @@ Grafana observability stack for MarkFlow (primary) with UnionCore hooks planned.
 
 ---
 
+## Current Status (2026-03-27)
+
+**Initial scaffold complete.** All 6 services start and Grafana is accessible at :3000.
+
+**What's done:**
+- Docker Compose stack with all services (Grafana, Prometheus, Loki, Promtail, Blackbox, MarkFlow Exporter)
+- 4 pre-built dashboards provisioned (API Latency, Error Rates, Log Viewer, System Health)
+- 5 alert rules provisioned (no notification contact point configured yet)
+- Datasources auto-provisioned (Prometheus + Loki)
+
+**What still needs work:**
+- Dashboards have no data yet — need to start MarkFlow on :8000 first, then verify each dashboard populates
+- MarkFlow Exporter shows "Network unreachable" when MarkFlow isn't running (expected, not an error)
+- Promtail label errors were fixed but log ingestion into Loki needs verification with MarkFlow running
+- Blackbox probes need MarkFlow running to succeed
+- Alert notification contact point not configured (configure email/Slack/etc via Grafana UI)
+- `.env` has `MARKFLOW_LOGS_PATH=../Doc-Conversion-2026/logs` — verify this matches MarkFlow's actual project directory name
+- Dashboard queries (especially Loki LogQL) may need tuning once real data flows through
+
+**Next session checklist:**
+1. Start MarkFlow (`docker-compose up -d` in the MarkFlow project)
+2. Verify exporter: `curl http://localhost:9101/metrics` (should show `markflow_up 1`)
+3. Check Prometheus targets: http://localhost:9090/targets (all should be UP)
+4. Check each dashboard in Grafana — fix any queries that return no data
+5. Configure an alert contact point if desired
+
+---
+
 ## What This Is
 
 Docker Compose stack providing centralized monitoring for MarkFlow:
