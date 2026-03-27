@@ -22,6 +22,15 @@ Grafana observability stack for MarkFlow (primary) with UnionCore hooks planned.
 - Alert notification contact point not configured (configure email/Slack/etc via Grafana UI)
 - `.env` has `MARKFLOW_LOGS_PATH=../Doc-Conversion-2026/logs` — verify this matches MarkFlow's actual project directory name
 - Dashboard queries (especially Loki LogQL) may need tuning once real data flows through
+- **Production auth:** The exporter needs a MarkFlow API key to scrape `/api/admin/system/metrics` when `DEV_BYPASS_AUTH=false`. See below.
+
+**Production API key setup (required before disabling DEV_BYPASS_AUTH):**
+1. Open MarkFlow admin panel → API Keys section
+2. Create a new key named "grafana-exporter"
+3. Copy the `mf_xxxxx` key (shown once, never stored)
+4. Add `MARKFLOW_API_KEY=mf_xxxxx` to this project's `.env`
+5. Update `exporter/markflow_exporter.py` to send the key as an auth header (~5 line change, not done yet)
+Note: `/api/health` is always unauthenticated — only the system metrics endpoint needs the key.
 
 **Next session checklist:**
 1. Start MarkFlow (`docker-compose up -d` in the MarkFlow project)
@@ -29,6 +38,7 @@ Grafana observability stack for MarkFlow (primary) with UnionCore hooks planned.
 3. Check Prometheus targets: http://localhost:9090/targets (all should be UP)
 4. Check each dashboard in Grafana — fix any queries that return no data
 5. Configure an alert contact point if desired
+6. Add API key auth support to the exporter (for production readiness)
 
 ---
 
