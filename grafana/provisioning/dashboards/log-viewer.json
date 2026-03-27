@@ -1,0 +1,260 @@
+{
+  "uid": "log-viewer",
+  "title": "Log Viewer",
+  "description": "Log viewer for MarkFlow FastAPI application (Loki + structlog)",
+  "tags": ["logs", "markflow", "loki"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": []
+  },
+  "schemaVersion": 39,
+  "version": 1,
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "constant",
+        "label": "Service",
+        "hide": 2,
+        "query": "markflow",
+        "current": {
+          "text": "markflow",
+          "value": "markflow"
+        }
+      },
+      {
+        "name": "level",
+        "type": "custom",
+        "label": "Log Level",
+        "description": "Filter logs by level",
+        "hide": 0,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "query": "debug,info,warning,error,critical",
+        "options": [
+          { "text": "All", "value": "$__all", "selected": true },
+          { "text": "debug", "value": "debug", "selected": false },
+          { "text": "info", "value": "info", "selected": false },
+          { "text": "warning", "value": "warning", "selected": false },
+          { "text": "error", "value": "error", "selected": false },
+          { "text": "critical", "value": "critical", "selected": false }
+        ],
+        "current": {
+          "text": ["All"],
+          "value": ["$__all"]
+        }
+      },
+      {
+        "name": "logger",
+        "type": "textbox",
+        "label": "Logger",
+        "description": "Regex match on logger name",
+        "hide": 0,
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        }
+      },
+      {
+        "name": "request_id",
+        "type": "textbox",
+        "label": "Request ID",
+        "description": "Regex match on request_id",
+        "hide": 0,
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log Volume",
+      "description": "Log volume over time grouped by level",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "stacking": { "mode": "normal" }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "debug" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "info" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "warning" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "error" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "critical" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "barWidth": 0.9,
+        "stacking": "normal"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "sum by (level) (count_over_time({service=\"markflow\"} | json [$__interval]))",
+          "legendFormat": "{{level}}",
+          "queryType": "range"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Log Level Distribution",
+      "description": "Count of logs by level for the selected time range",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "debug" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "info" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "warning" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "error" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "critical" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "minVizWidth": 0,
+        "minVizHeight": 10,
+        "text": {}
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "sum by (level) (count_over_time({service=\"markflow\"} | json [$__range]))",
+          "legendFormat": "{{level}}",
+          "queryType": "instant"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Log Stream",
+      "description": "All logs filterable by level, logger, and request_id",
+      "type": "logs",
+      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "{service=\"markflow\"} | json | level=~\"$level\" | logger=~\"$logger\" | line_format \"{{.timestamp}} [{{.level}}] {{.logger}}: {{.event}} {{if .path}}{{.method}} {{.path}} {{.status_code}}{{end}} {{if .duration_ms}}({{.duration_ms}}ms){{end}}\"",
+          "queryType": "range"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Request ID Search",
+      "description": "Logs filtered by a specific request_id",
+      "type": "logs",
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 28 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "{service=\"markflow\"} | json | request_id=~\"$request_id\"",
+          "queryType": "range"
+        }
+      ]
+    }
+  ],
+  "fiscalYearStartMonth": 0,
+  "liveNow": false,
+  "weekStart": ""
+}

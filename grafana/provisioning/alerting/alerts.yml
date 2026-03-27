@@ -1,0 +1,232 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: MarkFlow Alerts
+    folder: MarkFlow
+    interval: 1m
+    rules:
+      # Alert: MarkFlow is down
+      - uid: markflow-down
+        title: "MarkFlow Down"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: markflow_up
+              instant: true
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [1]
+                  operator:
+                    type: and
+                  reducer:
+                    type: last
+              refId: C
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          summary: "MarkFlow health check is failing"
+          description: "MarkFlow has been unreachable for more than 2 minutes."
+        labels:
+          severity: critical
+          service: markflow
+
+      # Alert: High CPU usage
+      - uid: markflow-high-cpu
+        title: "MarkFlow High CPU"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: markflow_cpu_percent
+              instant: true
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [80]
+                  operator:
+                    type: and
+                  reducer:
+                    type: avg
+              refId: C
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          summary: "MarkFlow CPU usage above 80%"
+          description: "CPU usage has been above 80% for more than 5 minutes. Current value: {{ $value }}%"
+        labels:
+          severity: warning
+          service: markflow
+
+      # Alert: High memory usage
+      - uid: markflow-high-memory
+        title: "MarkFlow High Memory"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: markflow_memory_percent
+              instant: true
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [85]
+                  operator:
+                    type: and
+                  reducer:
+                    type: avg
+              refId: C
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          summary: "MarkFlow memory usage above 85%"
+          description: "Memory usage has been above 85% for more than 5 minutes. Current value: {{ $value }}%"
+        labels:
+          severity: warning
+          service: markflow
+
+      # Alert: API latency spike
+      - uid: markflow-high-latency
+        title: "MarkFlow API Latency Spike"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: probe_duration_seconds{job="blackbox-http",service="markflow",endpoint="health"}
+              instant: true
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [5]
+                  operator:
+                    type: and
+                  reducer:
+                    type: avg
+              refId: C
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          summary: "MarkFlow API response time above 5 seconds"
+          description: "Health check probe latency has been above 5s for more than 5 minutes."
+        labels:
+          severity: warning
+          service: markflow
+
+      # Alert: Blackbox probe failing
+      - uid: markflow-probe-failing
+        title: "MarkFlow Health Probe Failing"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: probe_success{job="blackbox-http",service="markflow",endpoint="health"}
+              instant: true
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [1]
+                  operator:
+                    type: and
+                  reducer:
+                    type: last
+              refId: C
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          summary: "MarkFlow health endpoint probe is failing"
+          description: "The blackbox exporter cannot reach MarkFlow's /api/health endpoint."
+        labels:
+          severity: critical
+          service: markflow
+
+contactPoints:
+  - orgId: 1
+    name: default-email
+    receivers:
+      - uid: default-email
+        type: email
+        settings:
+          addresses: ""
+        disableResolveMessage: false
+
+policies:
+  - orgId: 1
+    receiver: default-email
+    group_by:
+      - grafana_folder
+      - alertname
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
