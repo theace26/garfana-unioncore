@@ -211,22 +211,6 @@ groups:
           severity: critical
           service: markflow
 
-contactPoints:
-  - orgId: 1
-    name: default-email
-    receivers:
-      - uid: default-email
-        type: email
-        settings:
-          addresses: ""
-        disableResolveMessage: false
-
-policies:
-  - orgId: 1
-    receiver: default-email
-    group_by:
-      - grafana_folder
-      - alertname
-    group_wait: 30s
-    group_interval: 5m
-    repeat_interval: 4h
+# Contact points and policies are configured via Grafana UI.
+# To add email alerts: Grafana > Alerting > Contact points > Add.
+# Alert rules above will show as "firing" in the UI without a contact point.

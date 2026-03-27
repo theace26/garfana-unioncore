@@ -17,8 +17,11 @@ scrape_configs:
     relabel_configs:
       # Only keep containers with specific names (markflow, meilisearch, etc.)
       - source_labels: ["__meta_docker_container_name"]
-        regex: ".*(?:markflow|meilisearch|doc.conversion).*"
+        regex: ".*(?i)(markflow|meilisearch|doc.conversion).*"
         action: keep
+      # Ensure job label is always set
+      - target_label: job
+        replacement: docker
       # Use container name as label
       - source_labels: ["__meta_docker_container_name"]
         regex: "/(.*)"
@@ -28,38 +31,38 @@ scrape_configs:
         target_label: image
       # Add service label based on container name
       - source_labels: ["__meta_docker_container_name"]
-        regex: ".*(?:markflow|doc.conversion).*"
+        regex: ".*(?i)(markflow|doc.conversion).*"
         target_label: service
         replacement: markflow
       - source_labels: ["__meta_docker_container_name"]
-        regex: ".*meilisearch.*"
+        regex: ".*(?i)meilisearch.*"
         target_label: service
         replacement: meilisearch
     pipeline_stages:
-      # Try to parse structlog JSON output from MarkFlow
-      - json:
-          expressions:
-            level: level
-            event: event
-            logger: logger
-            timestamp: timestamp
-            request_id: request_id
-            method: method
-            path: path
-            status_code: status_code
-            duration_ms: duration_ms
-      # Set log level label from parsed JSON
-      - labels:
-          level:
-          logger:
-      # Set timestamp from structlog timestamp if available
-      - timestamp:
-          source: timestamp
-          format: "2006-01-02T15:04:05.000Z"
-          fallback_formats:
-            - "2006-01-02T15:04:05Z07:00"
-            - "2006-01-02 15:04:05"
-          action_on_failure: fudge
+      # Only parse JSON on lines that start with { (structlog output)
+      - match:
+          selector: '{job="docker"}'
+          stages:
+            - json:
+                expressions:
+                  level: level
+                  event: event
+                  logger: logger
+                  timestamp: timestamp
+                  request_id: request_id
+                  method: method
+                  path: path
+                  status_code: status_code
+                  duration_ms: duration_ms
+            - labels:
+                level:
+            - timestamp:
+                source: timestamp
+                format: "2006-01-02T15:04:05.000Z"
+                fallback_formats:
+                  - "2006-01-02T15:04:05Z07:00"
+                  - "2006-01-02 15:04:05"
+                action_on_failure: fudge
 
   # MarkFlow log files (if mounted via volume)
   - job_name: markflow-logfiles
@@ -84,7 +87,6 @@ scrape_configs:
             duration_ms: duration_ms
       - labels:
           level:
-          logger:
       - timestamp:
           source: timestamp
           format: "2006-01-02T15:04:05.000Z"
